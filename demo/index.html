@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>麦麦开工餐 · 多人拼单优化器（离线演示）</title>
+<style>
+  :root{--yellow:#ffc72c;--red:#da291c;--ink:#1a1a1a;--bg:#faf7f0;--card:#fff;--ok:#1a7f37;--muted:#6b6b6b}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif}
+  body{background:var(--bg);color:var(--ink);padding:24px;max-width:880px;margin:0 auto}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .logo{width:44px;height:44px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:26px}
+  h1{font-size:22px}
+  .sub{color:var(--muted);font-size:13px;margin-bottom:18px}
+  .card{background:var(--card);border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  .row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+  .field{display:flex;flex-direction:column;gap:6px}
+  label{font-size:13px;color:var(--muted)}
+  input[type=number]{width:110px;padding:9px 12px;border:1.5px solid #ddd;border-radius:9px;font-size:16px}
+  .chk{display:flex;align-items:center;gap:6px;font-size:14px;padding:9px 0}
+  button{background:var(--yellow);border:none;padding:11px 22px;border-radius:9px;font-size:15px;font-weight:700;cursor:pointer}
+  button:hover{filter:brightness(.96)}
+  .person{border-left:4px solid var(--yellow);padding:10px 14px;background:#fffdf5;border-radius:8px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+  .person b{font-size:15px}
+  .price{font-weight:800;color:var(--red)}
+  .total{display:flex;justify-content:space-between;font-size:15px;padding:6px 0}
+  .total b{font-size:18px}
+  .tag{display:inline-block;background:#eef3ee;color:var(--ok);border-radius:6px;padding:2px 8px;font-size:12px;margin-right:6px}
+  .note{font-size:12px;color:var(--muted);line-height:1.7}
+  .err{color:var(--red);font-weight:600}
+  footer{margin-top:16px}
+</style>
+</head>
+<body>
+<header><div class="logo">M</div><h1>麦麦开工餐 · 多人拼单优化器</h1></header>
+<div class="sub">给工地班组、加班团队、值班人员的麦当劳拼单工具 —— 离线演示版，数据为 2026-10-23 成都真实门店菜单节选，<b>本页不发起任何网络请求</b>。</div>
+
+<div class="card">
+  <div class="row">
+    <div class="field"><label>人数</label><input type="number" id="people" value="4" min="1" max="20"></div>
+    <div class="field"><label>人均预算 ¥</label><input type="number" id="budget" value="30" min="10" max="100"></div>
+    <div class="field"><label>&nbsp;</label><button onclick="run()">生成拼单方案</button></div>
+  </div>
+  <div class="row" style="margin-top:10px">
+    <span class="chk"><input type="checkbox" id="noSpicy"><label for="noSpicy">不吃辣</label></span>
+    <span class="chk"><input type="checkbox" id="noBeef"><label for="noBeef">不吃牛</label></span>
+  </div>
+</div>
+
+<div class="card" id="out"><div class="note">填好人数和预算，点「生成拼单方案」。</div></div>
+
+<footer>
+  <div class="note">
+    参赛项目：麦当劳中国 1024 程序员节创意开发大赛 · 基于麦当劳中国官方 MCP 能力开发，非麦当劳官方产品。<br>
+    线上版接入真实 MCP（搜门店 → 拉菜单 → 过滤禁忌 → 多样性配餐 → 算价），见 README；餐品价格以官方渠道实时结果为准。
+  </div>
+</footer>
+
+<script>
+// 2026-10-23 成都成华区真实门店菜单节选（code 为 MCP query-meals 返回的真实编码）
+const MENU=[
+ {code:"521956",name:"巨无霸",price:25.0,beef:1},
+ {code:"9900016076",name:"板烧鸡腿堡",price:24.0},
+ {code:"521952",name:"麦辣鸡腿堡",price:23.5,spicy:1},
+ {code:"9900016073",name:"双层吉士汉堡",price:17.5,beef:1},
+ {code:"9900016077",name:"麦香鱼",price:15.0},
+ {code:"9900016566",name:"麦乐鸡(5块)",price:12.5},
+ {code:"9900016311",name:"中薯条",price:13.0},
+ {code:"100037",name:"可口可乐(中)",price:9.5},
+ {code:"100041",name:"零度可乐(中)",price:9.5},
+];
+
+function run(){
+  const people=+document.getElementById('people').value;
+  const budget=+document.getElementById('budget').value;
+  const noSpicy=document.getElementById('noSpicy').checked;
+  const noBeef=document.getElementById('noBeef').checked;
+  const out=document.getElementById('out');
+
+  if(!(people>=1&&budget>=10)){out.innerHTML='<div class="err">人数 ≥1，人均预算 ≥ ¥10</div>';return;}
+
+  const pool=MENU.filter(m=>{
+    if(noSpicy&&m.spicy)return false;
+    if(noBeef&&m.beef)return false;
+    return m.price<=budget;
+  }).sort((a,b)=>b.price-a.price);
+
+  if(!pool.length){out.innerHTML='<div class="err">该预算下没有可选项，试试提高人均预算</div>';return;}
+
+  // 多样性优先：每人不同（价值从高到低轮转），不够人再按价格补
+  const uniq=[...new Map(pool.map(m=>[m.name,m])).values()];
+  const queue=[...uniq,...pool];
+  const picks=[];let used=0;
+  for(let i=0;i<people;i++){
+    while(queue.length){
+      const c=queue.shift();
+      if(used+c.price<=budget*people+1e-9){picks.push(c);used+=c.price;break;}
+    }
+  }
+  const remain=budget*people-used;
+  const addOn=remain>5?pool.filter(m=>m.price<=remain).slice(0,3):[];
+
+  let html='<h3 style="margin-bottom:10px">每人一份（'+people+' 人不重复）</h3>';
+  picks.forEach((p,i)=>{html+='<div class="person"><b>第 '+(i+1)+' 人 · '+p.name+'</b><span class="price">¥'+p.price.toFixed(2)+'</span></div>';});
+  html+='<div style="margin-top:12px">';
+  html+='<div class="total"><span>预计总支出</span><b>¥'+used.toFixed(2)+'</b></div>';
+  html+='<div class="total"><span>总预算</span><span>¥'+(budget*people).toFixed(2)+'</span></div>';
+  html+='<div class="total"><span>剩余空间</span><span>¥'+remain.toFixed(2)+'</span></div>';
+  html+='</div>';
+  if(addOn.length){html+='<div style="margin-top:10px"><span class="tag">加购建议</span>'+addOn.map(m=>m.name+' ¥'+m.price.toFixed(2)).join(' · ')+'</div>';}
+  const taboo=[];if(noSpicy)taboo.push('辣类');if(noBeef)taboo.push('牛类');
+  if(taboo.length)html+='<div style="margin-top:8px"><span class="tag">已过滤</span>'+taboo.join('、')+'</div>';
+  out.innerHTML=html;
+}
+</script>
+</body>
+</html>
