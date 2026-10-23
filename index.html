@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>麦麦开工餐 · 多人拼单优化器</title>
+<meta name="description" content="给工地班组、加班团队、值班岗的麦当劳多人拼单工具：输入人数与人均预算，一次出齐每人一份、尽量不重样、不超支。">
+<style>
+:root{
+  --red:#DA291C;--red2:#B32217;--yellow:#FFC72C;--ink:#1A1A1A;--ink2:#5B5B66;--ink3:#8E8E99;
+  --bg:#FBF9F4;--card:#FFFFFF;--line:#ECE8E0;--ok:#1A7F37;--okbg:#EAF6EE;--warn:#B45309;--warnbg:#FEF3C7;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+  line-height:1.6;-webkit-font-smoothing:antialiased;padding:20px 16px 40px;
+}
+.wrap{max-width:940px;margin:0 auto}
+
+/* 头部 */
+header{display:flex;align-items:center;gap:13px;margin-bottom:8px;flex-wrap:wrap}
+.logo{width:46px;height:46px;border-radius:12px;background:var(--red);color:#fff;font-weight:800;font-size:28px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 3px 10px rgba(218,41,28,.25)}
+h1{font-size:23px;font-weight:800;letter-spacing:-.01em}
+.sub{color:var(--ink2);font-size:13.5px;margin-bottom:14px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.bd{font-size:12px;color:var(--ink2);background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 11px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;margin-bottom:14px;
+  box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.card h2{font-size:14px;font-weight:700;color:var(--ink2);margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.card h2 .n{width:19px;height:19px;border-radius:6px;background:var(--yellow);color:#7A4E00;font-size:11px;font-weight:800;
+  display:inline-flex;align-items:center;justify-content:center}
+
+/* 场景预设 */
+.presets{display:flex;gap:9px;flex-wrap:wrap}
+.preset{border:1.5px solid var(--line);background:#fff;border-radius:11px;padding:8px 13px;cursor:pointer;
+  font-size:13px;font-family:inherit;color:var(--ink);transition:.15s;text-align:left}
+.preset:hover{border-color:var(--yellow);background:#FFFDF4}
+.preset b{display:block;font-size:13.5px;font-weight:700}
+.preset span{font-size:11.5px;color:var(--ink3)}
+
+/* 输入 */
+.row{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:12.5px;color:var(--ink2)}
+input[type=number]{width:118px;padding:10px 13px;border:1.5px solid #E3DFD6;border-radius:10px;font-size:17px;
+  font-weight:700;font-family:inherit;color:var(--ink);background:#fff}
+input[type=number]:focus{outline:none;border-color:var(--yellow);box-shadow:0 0 0 3px rgba(255,199,44,.22)}
+.btn{background:var(--red);color:#fff;border:none;padding:12px 26px;border-radius:11px;font-size:15px;font-weight:700;
+  cursor:pointer;font-family:inherit;box-shadow:0 3px 12px rgba(218,41,28,.24);transition:.15s}
+.btn:hover{background:var(--red2)}
+.btn:active{transform:scale(.98)}
+.btn.ghost{background:#fff;color:var(--ink);border:1.5px solid var(--line);box-shadow:none;font-weight:600}
+.btn.ghost:hover{border-color:var(--yellow);background:#FFFDF4}
+.chks{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px}
+.chk{display:flex;align-items:center;gap:7px;font-size:14px;cursor:pointer;user-select:none}
+.chk input{width:17px;height:17px;accent-color:var(--red);cursor:pointer}
+
+/* 结果 */
+.people{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px}
+.p{border-left:4px solid var(--yellow);background:#FFFDF4;border-radius:10px;padding:11px 13px;
+  display:flex;justify-content:space-between;align-items:center;gap:8px}
+.p .who{font-size:11.5px;color:var(--ink3);display:block}
+.p .nm{font-size:14.5px;font-weight:700;line-height:1.35}
+.p .pr{font-weight:800;color:var(--red);font-size:15px;white-space:nowrap}
+.tag{display:inline-block;font-size:11px;border-radius:5px;padding:1px 7px;margin-left:6px;vertical-align:1px}
+.tag.d{background:var(--okbg);color:var(--ok)}
+.tag.hot{background:#FDECEA;color:var(--red)}
+
+/* 汇总 */
+.totals{margin-top:14px;border-top:1px dashed var(--line);padding-top:12px}
+.t{display:flex;justify-content:space-between;font-size:14px;padding:4px 0}
+.t b{font-size:17px}
+.t.big b{font-size:22px;color:var(--red)}
+.bar{height:9px;background:#F0EDE6;border-radius:999px;overflow:hidden;margin:9px 0 4px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--yellow),var(--red));border-radius:999px}
+.hint{font-size:12px;color:var(--ink3)}
+.pill{display:inline-block;font-size:12px;padding:3px 10px;border-radius:999px;margin:6px 6px 0 0}
+.pill.ok{background:var(--okbg);color:var(--ok)}
+.pill.warn{background:var(--warnbg);color:var(--warn)}
+.pill.grey{background:#F4F2EE;color:var(--ink2)}
+.addons{margin-top:12px;padding:12px 14px;background:#FFFDF4;border:1px dashed #F0D98A;border-radius:11px;font-size:13.5px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.empty{color:var(--ink3);font-size:13.5px}
+footer{margin-top:18px;font-size:12px;color:var(--ink3);line-height:1.85}
+footer a{color:var(--ink2)}
+.toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);background:#1A1A1A;color:#fff;
+  padding:11px 20px;border-radius:11px;font-size:13.5px;opacity:0;transition:.22s;pointer-events:none;z-index:99}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+@media(max-width:560px){
+  h1{font-size:19px}.card{padding:15px 16px}
+  input[type=number]{width:96px}.people{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="logo">M</div>
+  <div>
+    <h1>麦麦开工餐 · 多人拼单优化器</h1>
+    <div class="sub" style="margin:0">工地收工的一班组、加班到九点的一项目组、凌晨值班的一班岗 —— 输入人数和预算，一次出齐每人一份。</div>
+  </div>
+</header>
+
+<div class="badges">
+  <span class="bd">🍔 真实菜单快照 · 成都门店 · 2026-10-23</span>
+  <span class="bd">离线可玩 · 不发任何网络请求</span>
+  <span class="bd">零依赖 · 单文件网页</span>
+</div>
+
+<div class="card">
+  <h2><span class="n">1</span>常见场景，点一下就填好</h2>
+  <div class="presets">
+    <button class="preset" data-p="6" data-b="25"><b>工地收工</b><span>6 人 · 人均 ¥25</span></button>
+    <button class="preset" data-p="4" data-b="30"><b>加班夜宵</b><span>4 人 · 人均 ¥30</span></button>
+    <button class="preset" data-p="3" data-b="20"><b>凌晨值班</b><span>3 人 · 人均 ¥20</span></button>
+    <button class="preset" data-p="10" data-b="35"><b>部门团建</b><span>10 人 · 人均 ¥35</span></button>
+    <button class="preset" data-p="8" data-b="18"><b>学生结课</b><span>8 人 · 人均 ¥18</span></button>
+  </div>
+</div>
+
+<div class="card">
+  <h2><span class="n">2</span>告诉我人数和预算</h2>
+  <div class="row">
+    <div class="field"><label>人数（1–20）</label><input type="number" id="people" value="6" min="1" max="20"></div>
+    <div class="field"><label>人均预算（¥10–80）</label><input type="number" id="budget" value="25" min="10" max="80"></div>
+    <button class="btn" id="go">生成拼单方案</button>
+  </div>
+  <div class="chks">
+    <label class="chk"><input type="checkbox" id="noSpicy">不吃辣</label>
+    <label class="chk"><input type="checkbox" id="noBeef">不吃牛</label>
+    <label class="chk"><input type="checkbox" id="withDrink" checked>每人配一杯饮品</label>
+  </div>
+</div>
+
+<div class="card" id="out">
+  <h2><span class="n">3</span>拼单方案</h2>
+  <div class="empty">填好人数和预算，点「生成拼单方案」。也可以直接点上面的场景。</div>
+</div>
+
+<footer>
+  配餐规则：优先每人不同款（预算够就尽量不重样）→ 按禁忌过滤 → 总额压在「人数 × 人均预算」以内 → 剩余空间自动补饮品和小食。<br>
+  菜单为 2026-10-23 成都某门店通过麦当劳官方 MCP 抓取的真实快照（主食 / 小食 / 饮品共 <b id="mcount">—</b> 项），价格随门店与时间变动，仅供配餐参考，实际以官方渠道为准。<br>
+  本项目为个人开发作品，基于麦当劳中国官方 MCP 能力，非麦当劳官方产品。
+</footer>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const MENU=[{"n":"浓浓黑巧雪冰","p":23.0,"k":"drink","s":0,"b":0},{"n":"燕麦奶","p":21.0,"k":"drink","s":0,"b":0},{"n":"牛奶","p":19.0,"k":"drink","s":0,"b":1},{"n":"浓浓燕麦黑巧（冰/热）","p":15.9,"k":"drink","s":0,"b":0},{"n":"麦咖啡™奶铁","p":13.9,"k":"drink","s":0,"b":0},{"n":"浓浓黑巧（冰/热）","p":13.9,"k":"drink","s":0,"b":0},{"n":"阳光橙麦炫酷","p":13.0,"k":"drink","s":0,"b":0},{"n":"【美汁源】“黄金橙橙”","p":13.0,"k":"drink","s":0,"b":0},{"n":"【美汁源】“多汁柠柠”","p":12.0,"k":"drink","s":0,"b":0},{"n":"麦咖啡™美式","p":11.9,"k":"drink","s":0,"b":0},{"n":"100%苹果汁(盒装)","p":11.5,"k":"drink","s":0,"b":0},{"n":"怡泉+C","p":11.5,"k":"drink","s":0,"b":0},{"n":"锡兰红茶","p":11.5,"k":"drink","s":0,"b":0},{"n":"纯牛奶(盒装)","p":10.5,"k":"drink","s":0,"b":1},{"n":"美禄可可雪冰","p":9.9,"k":"drink","s":0,"b":0},{"n":"麦咖啡冰爽一夏","p":9.9,"k":"drink","s":0,"b":0},{"n":"燕麦奶铁","p":9.9,"k":"drink","s":0,"b":0},{"n":"雪碧","p":9.5,"k":"drink","s":0,"b":0},{"n":"可乐","p":9.5,"k":"drink","s":0,"b":0},{"n":"阳光柠檬红茶","p":9.5,"k":"drink","s":0,"b":0},{"n":"鲜萃咖啡","p":9.5,"k":"drink","s":0,"b":0},{"n":"培根安格斯厚牛堡","p":34.5,"k":"main","s":0,"b":1},{"n":"芝士安格斯厚牛堡","p":31.5,"k":"main","s":0,"b":1},{"n":"不素之霸双层牛堡","p":26.5,"k":"main","s":0,"b":1},{"n":"巨无霸","p":25.5,"k":"main","s":0,"b":1},{"n":"培根蔬萃双层牛堡","p":24.5,"k":"main","s":0,"b":1},{"n":"双层深海鳕鱼堡","p":24.0,"k":"main","s":0,"b":0},{"n":"板烧鸡腿堡","p":23.5,"k":"main","s":0,"b":0},{"n":"双层吉士汉堡","p":23.0,"k":"main","s":0,"b":0},{"n":"麦辣鸡腿汉堡","p":22.5,"k":"main","s":1,"b":0},{"n":"麦香鱼","p":22.5,"k":"main","s":0,"b":0},{"n":"麦香鸡","p":17.0,"k":"main","s":0,"b":0},{"n":"锦州蜜烤风味肉骨鸡架","p":16.0,"k":"main","s":0,"b":0},{"n":"薄皮焦香V翅","p":16.0,"k":"main","s":0,"b":0},{"n":"龙焰鸡腿堡","p":15.9,"k":"main","s":0,"b":0},{"n":"马来咖喱风味薄皮肉骨鸡3块","p":15.5,"k":"main","s":0,"b":0},{"n":"麦辣鸡翅","p":15.0,"k":"main","s":1,"b":0},{"n":"麦麦脆汁鸡1块","p":15.0,"k":"main","s":0,"b":0},{"n":"麦乐鸡","p":14.0,"k":"main","s":0,"b":0},{"n":"那么大鸡排（椒盐风味）","p":14.0,"k":"main","s":0,"b":0},{"n":"蘸酱炸鸡","p":11.9,"k":"main","s":0,"b":0},{"n":"泷盐星星麦旋风","p":16.5,"k":"side","s":0,"b":0},{"n":"泷愿成真麦旋风——大米风味","p":16.5,"k":"side","s":0,"b":0},{"n":"蓝莓爆爆珠麦旋风","p":16.5,"k":"side","s":0,"b":0},{"n":"柠檬脆脆麦旋风","p":16.5,"k":"side","s":0,"b":0},{"n":"脆脆薯条","p":16.0,"k":"side","s":0,"b":0},{"n":"“我就喜欢”鸡薯双全盒","p":15.9,"k":"side","s":0,"b":0},{"n":"“我就喜欢”鸡薯双全盒","p":15.9,"k":"side","s":0,"b":0},{"n":"经典麦旋风","p":15.5,"k":"side","s":0,"b":0},{"n":"心形薯饼5块","p":14.5,"k":"side","s":0,"b":0},{"n":"薯条","p":13.5,"k":"side","s":0,"b":0},{"n":"玉米杯","p":13.0,"k":"side","s":0,"b":0},{"n":"新地","p":12.0,"k":"side","s":0,"b":0},{"n":"蘸酱麦麦脆汁鸡","p":11.9,"k":"side","s":0,"b":0},{"n":"心形薯饼8块","p":9.9,"k":"side","s":0,"b":0},{"n":"派","p":8.5,"k":"side","s":0,"b":0},{"n":"苹果片","p":7.0,"k":"side","s":0,"b":0},{"n":"灰焰圆筒","p":5.0,"k":"side","s":0,"b":0},{"n":"圆筒冰淇淋","p":5.0,"k":"side","s":0,"b":0}];
+const KIND={main:"主食",side:"小食",drink:"饮品"};
+let seed=0, last=null;
+
+const el=id=>document.getElementById(id);
+function toast(msg){const t=el('toast');t.textContent=msg;t.classList.add('on');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('on'),1900);}
+const yuan=v=>'¥'+v.toFixed(2).replace(/\.00$/,'');
+
+function pool(kind,noSpicy,noBeef,cap){
+  return MENU.filter(m=>m.k===kind && !(noSpicy&&m.s) && !(noBeef&&m.b) && m.p<=cap).sort((a,b)=>b.p-a.p);
+}
+function uniqBy(arr){const s=new Set();return arr.filter(m=>s.has(m.n)?false:(s.add(m.n),true));}
+function rot(arr,n){if(!arr.length)return arr;const k=((n%arr.length)+arr.length)%arr.length;return arr.slice(k).concat(arr.slice(0,k));}
+
+function plan(){
+  const people=Math.max(1,Math.min(20,+el('people').value||1));
+  const budget=Math.max(10,Math.min(80,+el('budget').value||10));
+  el('people').value=people; el('budget').value=budget;
+  const noSpicy=el('noSpicy').checked, noBeef=el('noBeef').checked, withDrink=el('withDrink').checked;
+  const total=budget*people;
+
+  const mains=uniqBy(pool('main',noSpicy,noBeef,budget*1.35));
+  if(!mains.length){el('out').innerHTML='<h2><span class="n">3</span>拼单方案</h2><div class="empty">这个预算 + 禁忌组合下没有可选主食，试着提高人均预算，或取消一个禁忌。</div>';last=null;return;}
+
+  // 兜底：最便宜的一份都买不起 N 份，直接说清楚，不硬凑
+  const minP=Math.min.apply(null,mains.map(m=>m.p));
+  if(minP*people>total+1e-9){
+    el('out').innerHTML='<h2><span class="n">3</span>拼单方案</h2><div class="empty">'
+      +'人均 '+yuan(budget)+' 配不到 '+people+' 份主食：当前可选最便宜的一份是 '+yuan(minP)
+      +'，需要人均至少 '+yuan(Math.ceil(minP*10)/10)+'。把人均预算提上去再试。</div>';
+    last=null;return;
+  }
+
+  // 多样性优先：轮换起点，每人尽量不同款；同时给后面的人预留「最便宜一份」的钱，保证能配齐就配齐
+  const q=rot(mains,seed*3+ (people%mains.length));
+  const picks=[]; let used=0, stopped=false;
+  for(let i=0;i<people;i++){
+    const reserve=minP*(people-i-1);
+    let c=q[i%q.length];
+    if(used+c.p+reserve>total+1e-9){
+      c=q.filter(x=>used+x.p+reserve<=total+1e-9).sort((a,b)=>b.p-a.p)[0];
+      if(!c){stopped=true;break;}
+    }
+    picks.push(c); used+=c.p;
+  }
+
+  // 升级：预算还有空间时，把便宜的换成更贵且没出现过的款，把预算用足
+  for(let pass=0;pass<4;pass++){
+    let changed=false;
+    for(let i=0;i<picks.length;i++){
+      const cur=picks[i];
+      const others=new Set(picks.filter((_,j)=>j!==i).map(x=>x.n));
+      const cand=q.find(x=>x.p>cur.p && !others.has(x.n) && (used-cur.p+x.p)<=total+1e-9);
+      if(cand){used+=cand.p-cur.p;picks[i]=cand;changed=true;}
+    }
+    if(!changed)break;
+  }
+  let remain=total-used;
+
+  // 饮品：每人一杯（预算内）
+  let drink=null, drinkCost=0;
+  if(withDrink){
+    const ds=pool('drink',noSpicy,noBeef,80);
+    const cand=ds.slice().sort((a,b)=>a.p-b.p).find(d=>d.p*people<=remain+1e-9);
+    if(cand){drink=cand;drinkCost=cand.p*people;remain-=drinkCost;used+=drinkCost;}
+  }
+  // 加购小食建议
+  const sides=pool('side',noSpicy,noBeef,80).sort((a,b)=>a.p-b.p);
+  const addon=[];
+  for(const s of sides){ if(remain>=s.p){ addon.push(s); remain-=s.p; } if(addon.length>=3)break; }
+
+  const need=Math.ceil((used+(people-picks.length)*minP)/people*10)/10;
+  last={people,budget,total,noSpicy,noBeef,picks,used,remain,drink,drinkCost,addon,
+        dupCount:people-new Set(picks.map(function(x){return x.n})).size,stopped:stopped,need:need};
+  render(last);
+}
+
+function render(r){
+  const rate=Math.min(100, r.used/r.total*100);
+  let h='<h2><span class="n">3</span>拼单方案</h2><div class="people">';
+  r.picks.forEach((p,i)=>{
+    h+='<div class="p"><div><span class="who">第 '+(i+1)+' 人</span><span class="nm">'+p.n+'</span>'
+      +'<span class="tag d">'+KIND[p.k]+'</span>'+(p.s?'<span class="tag hot">辣</span>':'')+(p.b?'<span class="tag hot">牛</span>':'')
+      +'</div><span class="pr">'+yuan(p.p)+'</span></div>';
+  });
+  h+='</div>';
+  if(r.drink) h+='<div class="p" style="border-left-color:#3D7EFF;background:#F5F8FF"><div><span class="who">每人 +1</span><span class="nm">'+r.drink.n+'</span><span class="tag d">饮品</span></div><span class="pr">'+yuan(r.drinkCost)+'</span></div>';
+
+  h+='<div class="totals">'
+   +'<div class="t big"><span>预计总支出</span><b>'+yuan(r.used)+'</b></div>'
+   +'<div class="bar"><i style="width:'+rate.toFixed(1)+'%"></i></div>'
+   +'<div class="hint">预算 '+yuan(r.total)+'（'+r.people+' 人 × '+yuan(r.budget)+'）· 已用 '+rate.toFixed(0)+'% · 人均分摊 '+yuan(r.used/r.people)+'</div>'
+   +'<div class="t"><span>剩余空间</span><b style="font-size:15px">'+yuan(Math.max(0,r.remain))+'</b></div>'
+   +'</div>';
+
+  h+='<div style="margin-top:8px">';
+  h+='<span class="pill '+(r.remain>=0?'ok':'warn')+'">'+(r.remain>=0?'不超支':'超出 '+yuan(-r.remain))+'</span>';
+  const taboo=[]; if(r.noSpicy)taboo.push('辣'); if(r.noBeef)taboo.push('牛');
+  h+='<span class="pill grey">'+(taboo.length?'已过滤：'+taboo.join('、'):'未设置禁忌')+'</span>';
+  h+='<span class="pill grey">'+r.picks.length+' 份主食'+(r.drink?' + '+r.people+' 杯饮品':'')+'</span>';
+  if(r.dupCount>0) h+='<span class="pill warn">人数超过可选款数，部分重复</span>';
+  if(r.stopped) h+='<span class="pill warn">预算只够 '+r.picks.length+'/'+r.people+' 份，人均提到 '+yuan(r.need)+' 可配齐</span>';
+  h+='</div>';
+
+  if(r.addon.length){
+    h+='<div class="addons"><b>还能加这些（在预算内）：</b><br>'+r.addon.map(a=>a.n+' '+yuan(a.p)).join(' · ')+'</div>';
+  }
+  h+='<div class="actions">'
+   +'<button class="btn ghost" id="copy">📋 复制方案（发群里）</button>'
+   +'<button class="btn ghost" id="again">🔁 换一组搭配</button>'
+   +'</div>';
+  el('out').innerHTML=h;
+  el('copy').onclick=copyText;
+  el('again').onclick=()=>{seed++;plan();};
+}
+
+function copyText(){
+  if(!last)return;
+  const r=last, L=[];
+  L.push('【麦麦开工餐】'+r.people+' 人 · 人均预算 '+yuan(r.budget));
+  r.picks.forEach((p,i)=>L.push((i+1)+'. '+p.n+' '+yuan(p.p)));
+  if(r.drink)L.push('+ 每人一杯 '+r.drink.n+' '+yuan(r.drinkCost));
+  L.push('——');
+  L.push('合计 '+yuan(r.used)+' / 预算 '+yuan(r.total)+'，剩 '+yuan(Math.max(0,r.remain)));
+  L.push('人均分摊 '+yuan(r.used/r.people));
+  const tb=[]; if(r.noSpicy)tb.push('不吃辣'); if(r.noBeef)tb.push('不吃牛');
+  if(tb.length)L.push('禁忌：'+tb.join('、'));
+  if(r.addon.length)L.push('可加购：'+r.addon.map(a=>a.n).join('、'));
+  const t=L.join('\n');
+  const done=()=>toast('方案已复制，去群里粘贴吧');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(done).catch(()=>fallbackCopy(t,done));
+  } else fallbackCopy(t,done);
+}
+function fallbackCopy(t,done){
+  const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy');done();}catch(e){toast('复制失败，请手动选择文本');}
+  document.body.removeChild(ta);
+}
+
+document.querySelectorAll('.preset').forEach(b=>{
+  b.onclick=()=>{el('people').value=b.dataset.p;el('budget').value=b.dataset.b;seed=0;plan();};
+});
+el('go').onclick=()=>{seed=0;plan();};
+['people','budget'].forEach(id=>{el(id).addEventListener('keydown',e=>{if(e.key==='Enter'){seed=0;plan();}});});
+['noSpicy','noBeef','withDrink'].forEach(id=>{el(id).addEventListener('change',()=>{if(last){seed=0;plan();}});});
+
+el('mcount').textContent=MENU.length;
+plan();
+</script>
+</body>
+</html>
