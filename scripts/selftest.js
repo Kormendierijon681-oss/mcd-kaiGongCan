@@ -7,7 +7,7 @@ function E(id){ return store[id]||(store[id]={id,value:'',checked:false,textCont
   classList:{add(){},remove(){},contains(){return false}}}); }
 const document={getElementById:E,querySelectorAll:()=>[],createElement:()=>({style:{},select(){}}),body:{appendChild(){},removeChild(){}}};
 const ctx={document,navigator:{},setTimeout,clearTimeout,console,Math,JSON,Set,Array,Object,String,Number,Date,
-  requestAnimationFrame:()=>{}};
+  requestAnimationFrame:()=>{},location:{search:''},URLSearchParams:URLSearchParams};
 ctx.window=ctx;
 vm.createContext(ctx);
 vm.runInContext(src+'\n;globalThis.__plan=plan;globalThis.__last=()=>last',ctx);
