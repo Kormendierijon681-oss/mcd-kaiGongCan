@@ -29,6 +29,8 @@ import sys
 import urllib.request
 
 MCP_URL = "https://mcp.mcd.cn"
+# 单次响应体上限（8 MB）：防止异常或超大响应把本地进程内存吃干
+MAX_RESPONSE_BYTES = 8 * 1024 * 1024
 
 
 # ---------------------------------------------------------------- MCP 客户端
@@ -60,16 +62,24 @@ class McdMcp:
                 "Authorization": f"Bearer {self.token}",
             })
         with urllib.request.urlopen(req, timeout=timeout) as resp:
-            raw = resp.read().decode("utf-8")
+            body = resp.read(MAX_RESPONSE_BYTES + 1)
+        if len(body) > MAX_RESPONSE_BYTES:
+            raise RuntimeError(
+                f"MCP 响应超过上限 {MAX_RESPONSE_BYTES} 字节，已中止解析")
+        raw = body.decode("utf-8", errors="replace")
         # 兼容纯 JSON 与 SSE 两种响应
         try:
             msg = json.loads(raw)
         except json.JSONDecodeError:
             msg = None
             for line in raw.splitlines():
-                if line.startswith("data:"):
+                if not line.startswith("data:"):
+                    continue
+                try:
                     msg = json.loads(line[5:])
-                    break
+                except json.JSONDecodeError:
+                    continue  # 畸形 SSE 行跳过，继续找下一行
+                break
         if not msg:
             raise RuntimeError(f"MCP 响应无法解析: {raw[:200]}")
         if "error" in msg:
