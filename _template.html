@@ -225,7 +225,7 @@ function plan(){
 
   const need=Math.ceil((used+(people-picks.length)*minP)/people*10)/10;
   last={people,budget,total,noSpicy,noBeef,picks,used,remain,drink,drinkCost,addon,
-        dupCount:people-new Set(picks.map(function(x){return x.n})).size,stopped:stopped,need:need};
+        dupCount:people-mains.length,stopped:stopped,need:need};
   render(last);
 }
 
@@ -301,6 +301,16 @@ el('go').onclick=()=>{seed=0;plan();};
 ['noSpicy','noBeef','withDrink'].forEach(id=>{el(id).addEventListener('change',()=>{if(last){seed=0;plan();}});});
 
 el('mcount').textContent=MENU.length;
+
+// 支持分享带参数的链接：?p=6&b=25&ns=1&nb=1&d=1（人数 / 人均预算 / 不吃辣 / 不吃牛 / 配饮品）
+(function(){
+  var q=new URLSearchParams(location.search), v=function(k){return q.get(k)};
+  if(v('p'))el('people').value=v('p');
+  if(v('b'))el('budget').value=v('b');
+  el('noSpicy').checked=v('ns')==='1';
+  el('noBeef').checked=v('nb')==='1';
+  if(v('d')!==null)el('withDrink').checked=v('d')==='1';
+})();
 plan();
 </script>
 </body>
